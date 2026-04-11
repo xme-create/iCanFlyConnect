@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { listenToQueue, acceptRequest } from '../firebase/requests';
+import { listenToQueue, acceptRequest, getRequest } from '../firebase/requests';
 import { createSession } from '../firebase/sessions';
 import { useToast } from '../context/ToastContext';
 import RequestCard from '../components/RequestCard';
