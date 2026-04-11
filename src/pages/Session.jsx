@@ -25,11 +25,11 @@ const Session = () => {
   const studentToken = getStudentToken();
 
   useEffect(() => {
-    const unsub = listenToSession(sessionId, (data) => {
+    const unsub = listenToSession(sessionId, async (data) => {
       if (!data) {
         if (!isVolunteer) {
           toast('The volunteer was unavailable. Your request is back in the queue!', 'info');
-          revertRequestBySessionId(sessionId);
+          await revertRequestBySessionId(sessionId);
         } else {
           toast('Sorry, that session is no longer available.', 'warning');
         }

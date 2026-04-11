@@ -5,7 +5,8 @@ import {
   getStudentToken, 
   listenToMyActiveRequests, 
   deleteRequest, 
-  updateRequest 
+  updateRequest,
+  revertRequestBySessionId
 } from '../firebase/requests';
 import { useToast } from '../context/ToastContext';
 
@@ -135,9 +136,24 @@ const RequestHelp = () => {
           <p style={{ marginBottom: '1.5rem' }}>
             <strong>{matchedRequest.volunteerName}</strong> is waiting to share with you.
           </p>
-          <Link to={`/session/${matchedRequest.sessionId}`} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-            Jump In Now 🚀
-          </Link>
+          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to={`/session/${matchedRequest.sessionId}`} className="btn btn-primary" style={{ flex: 1, minWidth: '200px', justifyContent: 'center' }}>
+              Jump In Now 🚀
+            </Link>
+            <button 
+              onClick={async () => {
+                try {
+                  await revertRequestBySessionId(matchedRequest.sessionId);
+                  toast('Request re-queued!', 'success');
+                } catch (e) {
+                  toast('Could not re-queue request.', 'error');
+                }
+              }}
+              className="btn btn-secondary"
+            >
+              Cancel Match
+            </button>
+          </div>
         </div>
       )}
 
