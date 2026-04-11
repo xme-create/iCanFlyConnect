@@ -37,6 +37,8 @@ const RequestHelp = () => {
     setForm((prev) => ({ ...prev, topic: example }));
   };
 
+  const hasLiveSession = activeRequests.some(r => r.status === 'matched');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -44,11 +46,17 @@ const RequestHelp = () => {
       toast('Please fill in all fields.', 'error');
       return;
     }
+
+    if (hasLiveSession) {
+      toast('You already have a live session! Please finish that one first. 💙', 'warning');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await submitHelpRequest(form);
       toast('Request sent! We are finding a friend to help you. 💖', 'success');
-      setForm(prev => ({ ...prev, topic: '', timing: '' })); // Clear topic/timing but keep nickname
+      setForm(prev => ({ ...prev, topic: '', timing: '' })); 
     } catch (err) {
       toast('Something went wrong. Please try again.', 'error');
     }
@@ -56,6 +64,9 @@ const RequestHelp = () => {
   };
 
   if (checking) return <div className="spinner" style={{ marginTop: '4rem' }} />;
+
+  const matchedRequest = activeRequests.find(r => r.status === 'matched');
+  const pendingRequests = activeRequests.filter(r => r.status === 'pending');
 
   return (
     <div className="page" style={{ maxWidth: 620, margin: '0 auto' }}>
@@ -65,20 +76,32 @@ const RequestHelp = () => {
         <p>Pick any nickname — you're always safe and anonymous here.</p>
       </div>
 
-      <div className="card">
+      {/* MATCHED SESSION PROMINENT ALERT */}
+      {matchedRequest && (
+        <div className="card" style={{
+          marginBottom: '2rem', textAlign: 'center', padding: '1.5rem',
+          background: 'rgba(74,222,128,0.1)', borderColor: 'var(--success)',
+          boxShadow: '0 0 20px rgba(74,222,128,0.1)'
+        }}>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--success)' }}>✨ Your Session is Ready! ✨</h2>
+          <p style={{ marginBottom: '1.5rem' }}>
+            <strong>{matchedRequest.volunteerName}</strong> is waiting to share with you.
+          </p>
+          <Link to={`/session/${matchedRequest.sessionId}`} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+            Jump In Now 🚀
+          </Link>
+        </div>
+      )}
+
+      <div className="card" style={{ opacity: hasLiveSession ? 0.6 : 1, pointerEvents: hasLiveSession ? 'none' : 'auto' }}>
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label htmlFor="nickname">How should we call you?</label>
             <input
-              id="nickname"
-              name="nickname"
-              type="text"
+              id="nickname" name="nickname" type="text"
               placeholder="Pick a nickname you like..."
-              value={form.nickname}
-              onChange={handleChange}
-              maxLength={30}
-              required
-              autoComplete="off"
+              value={form.nickname} onChange={handleChange}
+              maxLength={30} required autoComplete="off"
               style={{ padding: '1rem', fontSize: '1.1rem' }}
             />
           </div>
@@ -86,23 +109,17 @@ const RequestHelp = () => {
           <div className="form-group">
             <label htmlFor="topic">What would you like to do today?</label>
             <textarea
-              id="topic"
-              name="topic"
+              id="topic" name="topic"
               placeholder="e.g. I want to read a story with someone..."
-              value={form.topic}
-              onChange={handleChange}
-              rows={3}
-              maxLength={300}
-              required
+              value={form.topic} onChange={handleChange}
+              rows={3} maxLength={300} required
               style={{ resize: 'vertical', minHeight: 110, padding: '1rem', fontSize: '1.1rem' }}
             />
             <p style={{ marginTop: '1rem', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Quick ideas:</p>
             <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
               {HELP_EXAMPLES.map((ex) => (
                 <button
-                  key={ex}
-                  type="button"
-                  onClick={() => handleExample(ex)}
+                  key={ex} type="button" onClick={() => handleExample(ex)}
                   className="btn btn-secondary btn-sm"
                   style={{ borderRadius: 50, fontSize: '0.85rem' }}
                 >
@@ -115,23 +132,17 @@ const RequestHelp = () => {
           <div className="form-group">
             <label htmlFor="timing">When do you want to start?</label>
             <input
-              id="timing"
-              name="timing"
-              type="text"
+              id="timing" name="timing" type="text"
               placeholder="e.g. Right now!, Later today..."
-              value={form.timing}
-              onChange={handleChange}
-              maxLength={80}
-              required
-              autoComplete="off"
+              value={form.timing} onChange={handleChange}
+              maxLength={80} required autoComplete="off"
               style={{ padding: '1rem', fontSize: '1.1rem' }}
             />
           </div>
 
           <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={submitting}
+            type="submit" className="btn btn-primary"
+            disabled={submitting || hasLiveSession}
             id="submit-request-btn"
             style={{ 
               width: '100%', justifyContent: 'center', 
@@ -139,41 +150,29 @@ const RequestHelp = () => {
               marginTop: '1rem' 
             }}
           >
-            {submitting ? '✨ Sending...' : '🚀 Let\'s Go!'}
+            {hasLiveSession ? '⌛ Finish live session first' : (submitting ? '✨ Sending...' : '🚀 Let\'s Go!')}
           </button>
         </form>
       </div>
 
-      {/* ACTIVE REQUESTS SECTION */}
-      {activeRequests.length > 0 && (
+      {/* PENDING REQUESTS SECTION */}
+      {pendingRequests.length > 0 && (
         <div style={{ marginTop: '3rem' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span>✨</span> Your Active Requests
+          <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+             Waiting requests ({pendingRequests.length})
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {activeRequests.map((req) => (
+            {pendingRequests.map((req) => (
               <div key={req.id} className="card" style={{ 
-                padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem',
-                borderLeft: '4px solid var(--primary)'
+                padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem',
+                background: 'rgba(255,255,255,0.02)', borderColor: 'var(--border)'
               }}>
-                <div style={{ fontSize: '2rem' }}>
-                  {req.status === 'matched' ? '💖' : '🌈'}
-                </div>
+                <div style={{ fontSize: '1.5rem' }}>🌈</div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 800, margin: 0, fontSize: '1.1rem' }}>{req.topic}</p>
-                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                    {req.status === 'matched' 
-                      ? `Partnered with ${req.volunteerName}! ✨` 
-                      : 'Finding a friend to help you out...'}
-                  </p>
+                  <p style={{ fontWeight: 700, margin: 0 }}>{req.topic}</p>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Finding a friend...</p>
                 </div>
-                {req.status === 'matched' && req.sessionId ? (
-                  <Link to={`/session/${req.sessionId}`} className="btn btn-primary btn-sm">
-                    Jump In
-                  </Link>
-                ) : (
-                  <span className="badge" style={{ background: 'rgba(255,255,255,0.05)' }}>Waiting</span>
-                )}
+                <span className="badge badge-pending">Waiting</span>
               </div>
             ))}
           </div>

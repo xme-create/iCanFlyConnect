@@ -32,6 +32,13 @@ const VolunteerDashboard = () => {
     const req = queue.find((r) => r.id === requestId);
     if (!req) return;
     try {
+      // Re-fetch request to ensure it is still pending
+      const latestReq = await getRequest(requestId);
+      if (!latestReq || latestReq.status !== 'pending') {
+        toast('This request was already taken! 🦋', 'info');
+        return;
+      }
+
       const { sessionId } = await createSession({
         requestId,
         volunteerId: user.uid,
@@ -42,7 +49,7 @@ const VolunteerDashboard = () => {
       await acceptRequest(requestId, {
         uid: user.uid,
         displayName: profile?.displayName || user.displayName || 'Volunteer',
-      });
+      }, sessionId);
       toast('Session started! Get ready to help 🚀', 'success');
       navigate(`/session/${sessionId}`);
     } catch (err) {

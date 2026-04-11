@@ -65,11 +65,12 @@ export const listenToMyRequests = (studentToken, callback) => {
   });
 };
 
-export const acceptRequest = async (requestId, volunteer) => {
+export const acceptRequest = async (requestId, volunteer, sessionId) => {
   await updateDoc(doc(db, 'requests', requestId), {
     status: 'matched',
     volunteerId: volunteer.uid,
     volunteerName: volunteer.displayName,
+    sessionId: sessionId,
   });
 };
 

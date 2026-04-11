@@ -111,32 +111,46 @@ const Session = () => {
 
       <div className="session-layout" style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 380px', // Swapped: Main content (Chat) on LEFT, Sidebar on RIGHT
-        gap: '1.5rem',
+        gridTemplateColumns: window.innerWidth < 900 ? '1fr' : '1fr 380px',
+        gap: '1.25rem',
         alignItems: 'start',
+        height: 'auto', // Allow content to dictate height on mobile
+        minHeight: 'calc(100vh - 200px)'
       }}>
         {/* Main panel (Chat or Video based on tab) */}
-        <div style={{ minHeight: '620px' }}>
-          {/* Tab Switcher (Inside main panel now) */}
+        <div style={{ minWidth: 0 }}>
+          {/* Tab Switcher */}
           <div style={{
-            display: 'flex', gap: '0.5rem', marginBottom: '1.5rem',
-            background: 'rgba(255,255,255,0.03)', borderRadius: 100, padding: 6,
-            border: '1px solid rgba(255,255,255,0.05)'
+            display: 'flex', 
+            flexWrap: 'wrap',
+            gap: '0.4rem', 
+            marginBottom: '1rem',
+            background: 'rgba(255,255,255,0.04)', 
+            borderRadius: 'var(--radius-md)', 
+            padding: '4px',
+            border: '1px solid rgba(255,255,255,0.08)'
           }}>
             {[
-              { id: 'chat', label: '💬 Chat room', emoji: '💬' },
-              { id: 'video', label: '🎥 Video & Voice', emoji: '🎥' }
+              { id: 'chat', label: '💬 Chat', emoji: '💬' },
+              { id: 'video', label: '🎥 Video', emoji: '🎥' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  flex: 1, padding: '0.8rem', borderRadius: 100, cursor: 'pointer',
-                  fontWeight: 800, fontSize: '1.05rem', border: 'none', fontFamily: 'var(--font)',
+                  flex: '1 1 140px', 
+                  padding: '0.7rem 0.5rem', 
+                  borderRadius: 'var(--radius-sm)', 
+                  cursor: 'pointer',
+                  fontWeight: 800, 
+                  fontSize: '0.95rem', 
+                  border: 'none', 
+                  fontFamily: 'var(--font)',
                   background: activeTab === tab.id ? 'var(--primary)' : 'transparent',
                   color: activeTab === tab.id ? 'white' : 'var(--text-secondary)',
                   transition: 'all 0.2s',
-                  boxShadow: activeTab === tab.id ? '0 4px 15px rgba(108,99,255,0.3)' : 'none'
+                  boxShadow: activeTab === tab.id ? 'var(--shadow-btn)' : 'none',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 {tab.label}
