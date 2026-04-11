@@ -31,7 +31,7 @@ const Home = () => {
     <div className="page" style={{ padding: 0 }}>
       {/* Hero Section */}
       <section className="hero" style={{ 
-        padding: '6rem 1.5rem 8rem', 
+        padding: window.innerWidth < 600 ? '2.5rem 1.5rem 4rem' : '6rem 1.5rem 8rem', 
         textAlign: 'center',
         background: 'radial-gradient(circle at top, rgba(108,99,255,0.15) 0%, transparent 70%)'
       }}>
