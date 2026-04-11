@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { submitHelpRequest, getStudentToken, listenToActiveRequest } from '../firebase/requests';
+import { useNavigate, Link } from 'react-router-dom';
+import { submitHelpRequest, getStudentToken, listenToMyActiveRequests } from '../firebase/requests';
 import { useToast } from '../context/ToastContext';
 
 const HELP_EXAMPLES = [
-  'Help me read a short book',
+  'Help with a school project',
   'Step-by-step math help',
-  'Help with writing a sentence',
+  'Practicing a new skill',
   'Read a story together',
   'Help understanding instructions',
 ];
@@ -14,7 +14,7 @@ const HELP_EXAMPLES = [
 const RequestHelp = () => {
   const [form, setForm] = useState({ nickname: '', topic: '', timing: '' });
   const [submitting, setSubmitting] = useState(false);
-  const [activeRequest, setActiveRequest] = useState(null);
+  const [activeRequests, setActiveRequests] = useState([]);
   const [checking, setChecking] = useState(true);
   const toast = useToast();
   const navigate = useNavigate();
@@ -22,17 +22,12 @@ const RequestHelp = () => {
 
   // Check for existing active requests
   useEffect(() => {
-    const unsub = listenToActiveRequest(token, (req) => {
-      setActiveRequest(req);
+    const unsub = listenToMyActiveRequests(token, (reqs) => {
+      setActiveRequests(reqs);
       setChecking(false);
-      
-      // Auto-navigate if already matched
-      if (req?.status === 'matched' && req.sessionId) {
-        navigate(`/session/${req.sessionId}`);
-      }
     });
     return unsub;
-  }, [token, navigate]);
+  }, [token]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -44,6 +39,7 @@ const RequestHelp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!form.nickname.trim() || !form.topic.trim() || !form.timing.trim()) {
       toast('Please fill in all fields.', 'error');
       return;
@@ -52,6 +48,7 @@ const RequestHelp = () => {
     try {
       await submitHelpRequest(form);
       toast('Request sent! We are finding a friend to help you. 💖', 'success');
+      setForm(prev => ({ ...prev, topic: '', timing: '' })); // Clear topic/timing but keep nickname
     } catch (err) {
       toast('Something went wrong. Please try again.', 'error');
     }
@@ -59,55 +56,6 @@ const RequestHelp = () => {
   };
 
   if (checking) return <div className="spinner" style={{ marginTop: '4rem' }} />;
-
-  // Waiting Room state
-  if (activeRequest && activeRequest.status === 'pending') {
-    return (
-      <div className="page" style={{ maxWidth: 560, margin: '0 auto' }}>
-        <div className="card" style={{
-          textAlign: 'center', padding: '3.5rem 2rem',
-          background: 'rgba(108,99,255,0.04)',
-          borderColor: 'var(--primary)',
-          boxShadow: '0 0 30px rgba(108,99,255,0.1)',
-        }}>
-          <div className="calm-indicator" style={{ 
-            fontSize: '5rem', marginBottom: '1.5rem',
-            animation: 'float 3s infinite ease-in-out' 
-          }}>
-            🌈
-          </div>
-          <h2 style={{ marginBottom: '1rem', color: 'var(--text-primary)', fontSize: '2rem' }}>
-            We're finding a friend!
-          </h2>
-          <p style={{ fontSize: '1.2rem', marginBottom: '2.5rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-            A friendly volunteer will be here to help you read and learn very soon. 
-            <strong> You can stay right here! 💖</strong>
-          </p>
-          
-          <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)' }}>
-            <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>YOUR REQUEST</p>
-            <p style={{ fontWeight: 700, margin: 0 }}>"{activeRequest.topic}"</p>
-          </div>
-
-          <button 
-            className="btn btn-secondary" 
-            style={{ marginTop: '2.5rem', width: '100%', justifyContent: 'center' }}
-            onClick={() => navigate('/')}
-          >
-            Go back for now
-          </button>
-        </div>
-
-        <style>{`
-          @keyframes float {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0); }
-          }
-        `}</style>
-      </div>
-    );
-  }
 
   return (
     <div className="page" style={{ maxWidth: 620, margin: '0 auto' }}>
@@ -196,10 +144,46 @@ const RequestHelp = () => {
         </form>
       </div>
 
-      <div className="card" style={{ marginTop: '2rem', background: 'rgba(108,99,255,0.05)', borderColor: 'rgba(108,99,255,0.2)' }}>
+      {/* ACTIVE REQUESTS SECTION */}
+      {activeRequests.length > 0 && (
+        <div style={{ marginTop: '3rem' }}>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span>✨</span> Your Active Requests
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {activeRequests.map((req) => (
+              <div key={req.id} className="card" style={{ 
+                padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem',
+                borderLeft: '4px solid var(--primary)'
+              }}>
+                <div style={{ fontSize: '2rem' }}>
+                  {req.status === 'matched' ? '💖' : '🌈'}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 800, margin: 0, fontSize: '1.1rem' }}>{req.topic}</p>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                    {req.status === 'matched' 
+                      ? `Partnered with ${req.volunteerName}! ✨` 
+                      : 'Finding a friend to help you out...'}
+                  </p>
+                </div>
+                {req.status === 'matched' && req.sessionId ? (
+                  <Link to={`/session/${req.sessionId}`} className="btn btn-primary btn-sm">
+                    Jump In
+                  </Link>
+                ) : (
+                  <span className="badge" style={{ background: 'rgba(255,255,255,0.05)' }}>Waiting</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="card" style={{ marginTop: '3rem', background: 'rgba(108,99,255,0.05)', borderColor: 'rgba(108,99,255,0.2)' }}>
         <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>🦋 Friendly reminders</h3>
         <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          {['📖 Read a book with a friend', '🔢 Help with your schoolwork', '✏️ Practice writing together', '🎯 Just talk and have fun!'].map((item) => (
+          {['🤝 Help with something new', '🔢 Get through your schoolwork', '✏️ Practice writing together', '🎯 Just talk and have fun!'].map((item) => (
             <li key={item} style={{ fontSize: '1rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ color: 'var(--primary)' }}>✔</span> {item}
             </li>

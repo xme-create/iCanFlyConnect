@@ -104,3 +104,17 @@ export const listenToActiveRequest = (studentToken, callback) => {
     }
   });
 };
+// Listen to all active or matched requests for a student
+export const listenToMyActiveRequests = (studentToken, callback) => {
+  const q = query(
+    collection(db, 'requests'),
+    where('studentToken', '==', studentToken),
+    where('status', 'in', ['pending', 'matched'])
+  );
+  return onSnapshot(q, (snap) => {
+    const requests = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+    callback(requests);
+  });
+};

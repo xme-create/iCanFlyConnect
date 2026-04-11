@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getStudentToken, listenToActiveRequest } from '../firebase/requests';
+import { getStudentToken, listenToMyActiveRequests } from '../firebase/requests';
 
 const Home = () => {
-  const [activeRequest, setActiveRequest] = useState(null);
+  const [activeRequests, setActiveRequests] = useState([]);
   const navigate = useNavigate();
   const token = getStudentToken();
 
   useEffect(() => {
-    const unsub = listenToActiveRequest(token, (req) => {
-      setActiveRequest(req);
+    const unsub = listenToMyActiveRequests(token, (reqs) => {
+      setActiveRequests(reqs);
     });
     return unsub;
   }, [token]);
 
-  const handleResume = () => {
-    if (activeRequest.status === 'matched') {
-      navigate(`/session/${activeRequest.sessionId}`);
+  const handleResume = (req) => {
+    if (req.status === 'matched') {
+      navigate(`/session/${req.sessionId}`);
     } else {
       navigate('/request');
     }
@@ -45,28 +45,49 @@ const Home = () => {
           </p>
 
           <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-            {activeRequest ? (
-              <button 
-                onClick={handleResume}
-                className="btn btn-primary"
-                style={{ 
-                  padding: '1.2rem 2.5rem', fontSize: '1.3rem', 
-                  backgroundImage: 'linear-gradient(135deg, #6c63ff 0%, #a29bfe 100%)',
-                  boxShadow: '0 10px 30px rgba(108,99,255,0.4)',
-                  border: 'none'
-                }}
-              >
-                ✨ Go to my help session
-              </button>
+            {activeRequests.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: 400 }}>
+                {activeRequests.map((req) => (
+                  <button 
+                    key={req.id}
+                    onClick={() => handleResume(req)}
+                    className="btn btn-primary"
+                    style={{ 
+                      padding: '1rem 1.5rem', fontSize: '1.1rem', 
+                      backgroundImage: req.status === 'matched' 
+                        ? 'linear-gradient(135deg, #6c63ff 0%, #a29bfe 100%)'
+                        : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                      boxShadow: req.status === 'matched' ? '0 10px 30px rgba(108,99,255,0.3)' : 'none',
+                      border: 'none',
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.75rem'
+                    }}
+                  >
+                    <span>{req.status === 'matched' ? '✨' : '🌈'}</span>
+                    <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {req.status === 'matched' ? `Resume: ${req.topic}` : `Waiting: ${req.topic}`}
+                    </span>
+                    <span>→</span>
+                  </button>
+                ))}
+                <Link to="/request" style={{ color: 'var(--primary-light)', fontSize: '0.9rem', fontWeight: 700 }}>
+                  + Request another session
+                </Link>
+              </div>
             ) : (
               <Link to="/request" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
                 🙋 Request Help Now
               </Link>
             )}
             
-            <Link to="/volunteer" className="btn btn-secondary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-              💙 Become a Volunteer →
-            </Link>
+            {activeRequests.length === 0 && (
+              <Link to="/volunteer" className="btn btn-secondary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
+                💙 Become a Volunteer →
+              </Link>
+            )}
           </div>
         </div>
       </section>
