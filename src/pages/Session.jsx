@@ -181,7 +181,11 @@ const Session = () => {
             ))}
           </div>
 
-          <div style={{ height: activeTab === 'video' ? '560px' : '620px' }}>
+          <div style={{ 
+            height: activeTab === 'video' ? '560px' : '620px',
+            maxHeight: 'calc(100dvh - 220px)',
+            minHeight: '400px'
+          }}>
             {activeTab === 'video' ? (
               <div style={{ height: '100%', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
                 <VideoRoom roomUrl={session.dailyRoomUrl} name={myName} />

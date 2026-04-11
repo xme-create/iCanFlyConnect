@@ -93,7 +93,7 @@ const VolunteerDashboard = () => {
         </div>
 
         {/* Filter + Sort controls */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.5rem' }}>
           {/* Filter */}
           {['all', 'favorites'].map((f) => (
             <button
@@ -101,24 +101,22 @@ const VolunteerDashboard = () => {
               id={`filter-${f}-btn`}
               onClick={() => setFilter(f)}
               className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
             >
-              {f === 'all' ? '📋 All' : '⭐ Favorites'}
+              {f === 'all' ? '📋 All' : '⭐ Favs'}
             </button>
           ))}
 
-          {/* Divider */}
-          <div style={{ width: 1, background: 'var(--border)', margin: '0 0.25rem' }} />
-
           {/* Sort */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            display: 'flex', alignItems: 'center', gap: '0.2rem',
             background: 'rgba(255,255,255,0.04)', borderRadius: 50,
-            padding: '0.3rem 0.75rem', border: '1px solid var(--border)',
+            padding: '0.2rem 0.4rem', border: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>Sort:</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, margin: '0 0.2rem' }}>Sort:</span>
             {[
-              { key: 'requested', label: '🕐 Wait time' },
-              { key: 'needed', label: '📅 When needed' },
+              { key: 'requested', label: 'Wait' },
+              { key: 'needed', label: 'Needed' },
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -127,8 +125,8 @@ const VolunteerDashboard = () => {
                 style={{
                   background: sortBy === key ? 'var(--primary)' : 'transparent',
                   color: sortBy === key ? 'white' : 'var(--text-secondary)',
-                  border: 'none', borderRadius: 50, padding: '0.25rem 0.75rem',
-                  fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
+                  border: 'none', borderRadius: 50, padding: '0.2rem 0.6rem',
+                  fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
                   fontFamily: 'var(--font)', transition: 'all 0.2s',
                 }}
               >
@@ -139,25 +137,6 @@ const VolunteerDashboard = () => {
         </div>
       </div>
 
-      {/* Volunteer stats */}
-      {profile && (
-        <div className="card" style={{ marginBottom: '2rem', background: 'rgba(108,99,255,0.07)', borderColor: 'rgba(108,99,255,0.2)' }}>
-          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <div className="stat-box">
-              <div className="stat-value">{profile.totalSessions ?? 0}</div>
-              <div className="stat-label">Sessions Helped</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-value">{profile.totalMinutes ?? 0}</div>
-              <div className="stat-label">Minutes Given</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-value">{queue.length}</div>
-              <div className="stat-label">Waiting Now</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {loading && <div className="spinner" />}
 
@@ -188,6 +167,26 @@ const VolunteerDashboard = () => {
           />
         ))}
       </div>
+
+      {/* Volunteer stats moved to bottom */}
+      {profile && (
+        <div className="card" style={{ marginTop: '3rem', background: 'rgba(108,99,255,0.07)', borderColor: 'rgba(108,99,255,0.2)' }}>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div className="stat-box">
+              <div className="stat-value">{profile.totalSessions ?? 0}</div>
+              <div className="stat-label">Sessions Helped</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-value">{profile.totalMinutes ?? 0}</div>
+              <div className="stat-label">Minutes Given</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-value">{queue.length}</div>
+              <div className="stat-label">Waiting Now</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
