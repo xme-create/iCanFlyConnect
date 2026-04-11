@@ -138,8 +138,7 @@ export const revertRequestBySessionId = async (sessionId) => {
   try {
     const q = query(
       collection(db, 'requests'),
-      where('sessionId', '==', sessionId),
-      where('status', '==', 'matched')
+      where('sessionId', '==', sessionId)
     );
     const snap = await getDocs(q);
     if (!snap.empty) {
