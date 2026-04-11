@@ -119,3 +119,16 @@ export const listenToMyActiveRequests = (studentToken, callback) => {
     callback(requests);
   });
 };
+
+export const deleteRequest = async (requestId) => {
+  await updateDoc(doc(db, 'requests', requestId), {
+    status: 'cancelled'
+  });
+};
+
+export const updateRequest = async (requestId, topic, timing) => {
+  await updateDoc(doc(db, 'requests', requestId), {
+    topic,
+    timing
+  });
+};

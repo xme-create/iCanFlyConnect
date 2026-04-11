@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { listenToSession } from '../firebase/sessions';
+import { listenToSession, markStudentJoined } from '../firebase/sessions';
 import { getStudentToken } from '../firebase/requests';
 import { addFavorite, removeFavorite, isFavorite } from '../firebase/favorites';
 import { useToast } from '../context/ToastContext';
@@ -26,6 +26,12 @@ const Session = () => {
 
   useEffect(() => {
     const unsub = listenToSession(sessionId, (data) => {
+      if (!data) {
+        toast('Sorry, that session is no longer available.', 'warning');
+        navigate(isVolunteer ? '/dashboard' : '/');
+        return;
+      }
+
       setSession(data);
       if (!startMs && data.startTime?.seconds) {
         setStartMs(data.startTime.seconds * 1000);
@@ -39,6 +45,13 @@ const Session = () => {
     });
     return unsub;
   }, [sessionId, navigate, isVolunteer, startMs, toast]);
+
+  // Mark student as joined when they view the page
+  useEffect(() => {
+    if (!isVolunteer && !loading && session) {
+      markStudentJoined(sessionId);
+    }
+  }, [isVolunteer, loading, session, sessionId]);
 
   useEffect(() => {
     if (session?.volunteerId) {
@@ -90,6 +103,11 @@ const Session = () => {
               {isVolunteer ? `Helping ${session.studentNickname}` : `Sharing with ${session.volunteerName}`}
             </h2>
             <span className="badge badge-active" style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>Live Ahora</span>
+            {isVolunteer && session.studentJoined && (
+              <span className="badge" style={{ background: 'rgba(255, 107, 174, 0.15)', color: 'var(--secondary)', border: '1px solid rgba(255, 107, 174, 0.3)', fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
+                🎉 Student Arrived!
+              </span>
+            )}
           </div>
           <p style={{ margin: '0.25rem 0 0', fontSize: '1rem', color: 'var(--text-secondary)' }}>
              {session.topic}

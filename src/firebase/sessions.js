@@ -70,8 +70,23 @@ export const getSession = async (sessionId) => {
 // Live listener for a specific session
 export const listenToSession = (sessionId, callback) => {
   return onSnapshot(doc(db, 'sessions', sessionId), (snap) => {
-    if (snap.exists()) callback({ id: snap.id, ...snap.data() });
+    if (snap.exists()) {
+      callback({ id: snap.id, ...snap.data() });
+    } else {
+      callback(null); // Document does not exist
+    }
   });
+};
+
+// Update session when student arrives
+export const markStudentJoined = async (sessionId) => {
+  try {
+    await updateDoc(doc(db, 'sessions', sessionId), {
+      studentJoined: true,
+    });
+  } catch (err) {
+    console.error('Failed to mark student joined:', err);
+  }
 };
 
 // Volunteer session history

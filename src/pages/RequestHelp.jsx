@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { submitHelpRequest, getStudentToken, listenToMyActiveRequests } from '../firebase/requests';
+import { 
+  submitHelpRequest, 
+  getStudentToken, 
+  listenToMyActiveRequests, 
+  deleteRequest, 
+  updateRequest 
+} from '../firebase/requests';
 import { useToast } from '../context/ToastContext';
 
 const HELP_EXAMPLES = [
@@ -13,9 +19,11 @@ const HELP_EXAMPLES = [
 
 const RequestHelp = () => {
   const [form, setForm] = useState({ nickname: '', topic: '', timing: '' });
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeRequests, setActiveRequests] = useState([]);
   const [checking, setChecking] = useState(true);
+  
   const toast = useToast();
   const navigate = useNavigate();
   const token = getStudentToken();
@@ -25,9 +33,15 @@ const RequestHelp = () => {
     const unsub = listenToMyActiveRequests(token, (reqs) => {
       setActiveRequests(reqs);
       setChecking(false);
+      
+      // If the request currently being edited is matched or cancelled, exit edit mode
+      if (editingId && !reqs.find(r => r.id === editingId && r.status === 'pending')) {
+        setEditingId(null);
+        setForm(prev => ({ ...prev, topic: '', timing: '' }));
+      }
     });
     return unsub;
-  }, [token]);
+  }, [token, editingId]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -54,13 +68,45 @@ const RequestHelp = () => {
 
     setSubmitting(true);
     try {
-      await submitHelpRequest(form);
-      toast('Request sent! We are finding a friend to help you. 💖', 'success');
+      if (editingId) {
+        await updateRequest(editingId, form.topic, form.timing);
+        toast('Request updated! 🦋', 'success');
+        setEditingId(null);
+      } else {
+        await submitHelpRequest(form);
+        toast('Request sent! We are finding a friend to help you. 💖', 'success');
+      }
       setForm(prev => ({ ...prev, topic: '', timing: '' })); 
     } catch (err) {
       toast('Something went wrong. Please try again.', 'error');
     }
     setSubmitting(false);
+  };
+
+  const handleCancelClick = () => {
+    setEditingId(null);
+    setForm(prev => ({ ...prev, topic: '', timing: '' }));
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to cancel this request?')) {
+      try {
+        await deleteRequest(id);
+        toast('Request cancelled.', 'info');
+      } catch (err) {
+        toast('Could not cancel request. Try again later.', 'error');
+      }
+    }
+  };
+
+  const handleEdit = (req) => {
+    setEditingId(req.id);
+    setForm({
+      nickname: req.nickname,
+      topic: req.topic,
+      timing: req.timing,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (checking) return <div className="spinner" style={{ marginTop: '4rem' }} />;
@@ -72,7 +118,9 @@ const RequestHelp = () => {
     <div className="page" style={{ maxWidth: 620, margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🙋</div>
-        <h1 style={{ marginBottom: '0.5rem', fontSize: 'clamp(1.6rem, 4vw, 2.5rem)' }}>Request Help</h1>
+        <h1 style={{ marginBottom: '0.5rem', fontSize: 'clamp(1.6rem, 4vw, 2.5rem)' }}>
+          {editingId ? 'Edit Your Request' : 'Request Help'}
+        </h1>
         <p>Pick any nickname — you're always safe and anonymous here.</p>
       </div>
 
@@ -93,7 +141,7 @@ const RequestHelp = () => {
         </div>
       )}
 
-      <div className="card" style={{ opacity: hasLiveSession ? 0.6 : 1, pointerEvents: hasLiveSession ? 'none' : 'auto' }}>
+      <div className="card" style={{ opacity: hasLiveSession ? 0.6 : 1, pointerEvents: hasLiveSession ? 'none' : 'auto', borderColor: editingId ? 'var(--primary)' : 'var(--border)' }}>
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label htmlFor="nickname">How should we call you?</label>
@@ -102,7 +150,8 @@ const RequestHelp = () => {
               placeholder="Pick a nickname you like..."
               value={form.nickname} onChange={handleChange}
               maxLength={30} required autoComplete="off"
-              style={{ padding: '1rem', fontSize: '1.1rem' }}
+              disabled={editingId !== null} // Prevent changing nickname if editing
+              style={{ padding: '1rem', fontSize: '1.1rem', opacity: editingId ? 0.6 : 1 }}
             />
           </div>
 
@@ -115,18 +164,22 @@ const RequestHelp = () => {
               rows={3} maxLength={300} required
               style={{ resize: 'vertical', minHeight: 110, padding: '1rem', fontSize: '1.1rem' }}
             />
-            <p style={{ marginTop: '1rem', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Quick ideas:</p>
-            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-              {HELP_EXAMPLES.map((ex) => (
-                <button
-                  key={ex} type="button" onClick={() => handleExample(ex)}
-                  className="btn btn-secondary btn-sm"
-                  style={{ borderRadius: 50, fontSize: '0.85rem' }}
-                >
-                  {ex}
-                </button>
-              ))}
-            </div>
+            {!editingId && (
+              <>
+                <p style={{ marginTop: '1rem', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Quick ideas:</p>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  {HELP_EXAMPLES.map((ex) => (
+                    <button
+                      key={ex} type="button" onClick={() => handleExample(ex)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ borderRadius: 50, fontSize: '0.85rem' }}
+                    >
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="form-group">
@@ -140,18 +193,30 @@ const RequestHelp = () => {
             />
           </div>
 
-          <button
-            type="submit" className="btn btn-primary"
-            disabled={submitting || hasLiveSession}
-            id="submit-request-btn"
-            style={{ 
-              width: '100%', justifyContent: 'center', 
-              fontSize: '1.2rem', padding: '1.2rem', 
-              marginTop: '1rem' 
-            }}
-          >
-            {hasLiveSession ? '⌛ Finish live session first' : (submitting ? '✨ Sending...' : '🚀 Let\'s Go!')}
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <button
+              type="submit" className="btn btn-primary"
+              disabled={submitting || hasLiveSession}
+              id="submit-request-btn"
+              style={{ 
+                flex: 1, justifyContent: 'center', 
+                fontSize: '1.2rem', padding: '1.2rem' 
+              }}
+            >
+              {hasLiveSession ? '⌛ Finish live session first' : (editingId ? (submitting ? 'Updating...' : 'Save Changes') : (submitting ? '✨ Sending...' : '🚀 Let\'s Go!'))}
+            </button>
+            
+            {editingId && (
+              <button 
+                type="button" 
+                className="btn btn-secondary"
+                onClick={handleCancelClick}
+                style={{ fontSize: '1.1rem', padding: '1.2rem' }}
+              >
+                Cancel Edit
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -164,15 +229,34 @@ const RequestHelp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {pendingRequests.map((req) => (
               <div key={req.id} className="card" style={{ 
-                padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem',
-                background: 'rgba(255,255,255,0.02)', borderColor: 'var(--border)'
+                padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+                background: req.id === editingId ? 'rgba(108,99,255,0.05)' : 'rgba(255,255,255,0.02)', 
+                borderColor: req.id === editingId ? 'var(--primary)' : 'var(--border)'
               }}>
                 <div style={{ fontSize: '1.5rem' }}>🌈</div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: '200px' }}>
                   <p style={{ fontWeight: 700, margin: 0 }}>{req.topic}</p>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Finding a friend...</p>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{req.timing}</p>
                 </div>
-                <span className="badge badge-pending">Waiting</span>
+                
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => handleEdit(req)}
+                    className="btn btn-sm"
+                    style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                    disabled={hasLiveSession}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(req.id)}
+                    className="btn btn-sm"
+                    style={{ background: 'transparent', border: '1px solid rgba(248,113,113,0.3)', color: 'var(--danger)' }}
+                    disabled={hasLiveSession}
+                  >
+                    🗑️ Cancel
+                  </button>
+                </div>
               </div>
             ))}
           </div>
