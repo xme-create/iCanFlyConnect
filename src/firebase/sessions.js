@@ -45,13 +45,25 @@ export const endSession = async (sessionId, startTimeMs, extended) => {
   const durationMinutes = Math.round((endTime - startTimeMs) / 60000);
 
   const snap = await getDoc(doc(db, 'sessions', sessionId));
-  const { volunteerId } = snap.data();
+  const { volunteerId, requestId } = snap.data();
 
   await updateDoc(doc(db, 'sessions', sessionId), {
     endTime: serverTimestamp(),
     durationMinutes,
     status: 'ended',
   });
+
+  // Finish the request so it does not stay 'matched' on the student dashboard
+  if (requestId) {
+    try {
+      await updateDoc(doc(db, 'requests', requestId), {
+        status: 'completed',
+        sessionId: null,
+      });
+    } catch (e) {
+      console.error('Could not complete request:', e);
+    }
+  }
 
   // Update volunteer totals
   await updateDoc(doc(db, 'volunteers', volunteerId), {
