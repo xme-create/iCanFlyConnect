@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getStudentToken, listenToMyActiveRequests, revertRequestBySessionId } from '../firebase/requests';
+import { getStudentToken, listenToMyActiveRequests, unmatchRequest } from '../firebase/requests';
 
 const Home = () => {
   const [activeRequests, setActiveRequests] = useState([]);
@@ -14,8 +14,13 @@ const Home = () => {
     return unsub;
   }, [token]);
 
-  const handleResume = (req) => {
+  const handleResume = async (req) => {
     if (req.status === 'matched') {
+      if (!req.sessionId) {
+        // Handle corrupted legacy ghost requests seamlessly
+        await unmatchRequest(req.id);
+        return;
+      }
       navigate(`/session/${req.sessionId}`);
     } else {
       navigate('/request');
@@ -48,36 +53,30 @@ const Home = () => {
             {activeRequests.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: 400 }}>
                 {activeRequests.map((req) => (
-                  <div key={req.id} style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-                    <button 
-                      onClick={() => handleResume(req)}
-                      className="btn btn-primary"
-                      style={{ 
-                        flex: 1, padding: '1rem 1.5rem', fontSize: '1.1rem', 
-                        backgroundImage: req.status === 'matched' 
-                          ? 'linear-gradient(135deg, #6c63ff 0%, #a29bfe 100%)'
-                          : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                        boxShadow: req.status === 'matched' ? '0 10px 30px rgba(108,99,255,0.3)' : 'none',
-                        border: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0
-                      }}
-                    >
-                      <span>{req.status === 'matched' ? '✨' : '🌈'}</span>
-                      <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {req.status === 'matched' ? `Resume: ${req.topic}` : `Waiting: ${req.topic}`}
-                      </span>
-                      <span>→</span>
-                    </button>
-                    {req.status === 'matched' && (
-                      <button 
-                        onClick={() => revertRequestBySessionId(req.sessionId)}
-                        className="btn btn-secondary"
-                        style={{ padding: '0 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        title="Cancel Match & Re-queue"
-                      >
-                        ❌
-                      </button>
-                    )}
-                  </div>
+                  <button 
+                    key={req.id}
+                    onClick={() => handleResume(req)}
+                    className="btn btn-primary"
+                    style={{ 
+                      padding: '1rem 1.5rem', fontSize: '1.1rem', 
+                      backgroundImage: req.status === 'matched' 
+                        ? 'linear-gradient(135deg, #6c63ff 0%, #a29bfe 100%)'
+                        : 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                      boxShadow: req.status === 'matched' ? '0 10px 30px rgba(108,99,255,0.3)' : 'none',
+                      border: 'none',
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.75rem'
+                    }}
+                  >
+                    <span>{req.status === 'matched' ? '✨' : '🌈'}</span>
+                    <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {req.status === 'matched' ? `Resume: ${req.topic}` : `Waiting: ${req.topic}`}
+                    </span>
+                    <span>→</span>
+                  </button>
                 ))}
                 <Link to="/request" style={{ color: 'var(--primary-light)', fontSize: '0.9rem', fontWeight: 700 }}>
                   + Request another session

@@ -153,3 +153,12 @@ export const revertRequestBySessionId = async (sessionId) => {
     console.error("Could not revert request:", err);
   }
 };
+
+export const unmatchRequest = async (requestId) => {
+  await updateDoc(doc(db, 'requests', requestId), {
+    status: 'pending',
+    volunteerId: null,
+    volunteerName: null,
+    sessionId: null
+  });
+};

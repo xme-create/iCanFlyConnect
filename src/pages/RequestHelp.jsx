@@ -6,7 +6,7 @@ import {
   listenToMyActiveRequests, 
   deleteRequest, 
   updateRequest,
-  revertRequestBySessionId
+  unmatchRequest
 } from '../firebase/requests';
 import { useToast } from '../context/ToastContext';
 
@@ -143,7 +143,7 @@ const RequestHelp = () => {
             <button 
               onClick={async () => {
                 try {
-                  await revertRequestBySessionId(matchedRequest.sessionId);
+                  await unmatchRequest(matchedRequest.id);
                   toast('Request re-queued!', 'success');
                 } catch (e) {
                   toast('Could not re-queue request.', 'error');
