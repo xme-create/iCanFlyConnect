@@ -132,3 +132,24 @@ export const updateRequest = async (requestId, topic, timing) => {
     timing
   });
 };
+
+export const revertRequestBySessionId = async (sessionId) => {
+  const q = query(
+    collection(db, 'requests'),
+    where('sessionId', '==', sessionId),
+    where('status', '==', 'matched')
+  );
+  
+  // Use getDoc instead of getDocs directly here because we need to await it
+  import('firebase/firestore').then(async ({ getDocs }) => {
+     const snap = await getDocs(q);
+     if (!snap.empty) {
+       await updateDoc(doc(db, 'requests', snap.docs[0].id), {
+         status: 'pending',
+         volunteerId: null,
+         volunteerName: null,
+         sessionId: null
+       });
+     }
+  }).catch(err => console.error("Could not revert request:", err));
+};

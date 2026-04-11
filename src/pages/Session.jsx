@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { listenToSession, markStudentJoined } from '../firebase/sessions';
-import { getStudentToken } from '../firebase/requests';
+import { getStudentToken, revertRequestBySessionId } from '../firebase/requests';
 import { addFavorite, removeFavorite, isFavorite } from '../firebase/favorites';
 import { useToast } from '../context/ToastContext';
 import ChatRoom from '../components/ChatRoom';
@@ -27,7 +27,12 @@ const Session = () => {
   useEffect(() => {
     const unsub = listenToSession(sessionId, (data) => {
       if (!data) {
-        toast('Sorry, that session is no longer available.', 'warning');
+        if (!isVolunteer) {
+          toast('The volunteer was unavailable. Your request is back in the queue!', 'info');
+          revertRequestBySessionId(sessionId);
+        } else {
+          toast('Sorry, that session is no longer available.', 'warning');
+        }
         navigate(isVolunteer ? '/dashboard' : '/');
         return;
       }
