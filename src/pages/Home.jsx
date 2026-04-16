@@ -44,9 +44,11 @@ const Home = () => {
               WebkitTextFillColor: 'transparent'
             }}>higher</span>
           </h1>
-          <p style={{ fontSize: '1.25rem', maxWidth: 640, margin: '0 auto 3rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            iCanFlyConnect pairs students with caring volunteers
-            for real-time, one-to-one support — no account required.
+          <p style={{ fontSize: '1.25rem', maxWidth: 640, margin: '0 auto 1.5rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Get quick one-on-one help from a real person - for school work, reading or anything you are stuck on. No account needed. Stay anonymous.
+          </p>
+          <p style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-muted)', marginBottom: '3rem' }}>
+            🔒 Safe, simple and part of a trusted community.
           </p>
 
           <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -84,7 +86,7 @@ const Home = () => {
               </div>
             ) : (
               <Link to="/request" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-                🙋 Request Help Now
+                🙋 Get Help Now
               </Link>
             )}
             
@@ -107,9 +109,9 @@ const Home = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2.5rem' }}>
             {[
-              { step: '1', emoji: '💬', title: 'Ask for help', text: "Just pick a nickname and tell us what you'd like to do. You stay anonymous!" },
+              { step: '1', emoji: '💬', title: 'Ask for help', text: "Type what you need and pick a nick name. No sign-up required - you stay anonymous." },
               { step: '2', emoji: '🤝', title: 'Get matched', text: "A friendly volunteer sees your request and joins you instantly." },
-              { step: '3', emoji: '🎉', title: 'Learn together', text: "Chat, talk, or use video for up to 20 minutes of one-to-one help." }
+              { step: '3', emoji: '🎉', title: 'Learn together', text: "Chat, talk, or use video for one-to-one help." }
             ].map((item) => (
               <div key={item.step} className="card" style={{ textAlign: 'center', padding: '2.5rem 2rem' }}>
                 <div style={{ 
@@ -121,6 +123,42 @@ const Home = () => {
                 </div>
                 <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>{item.step}. {item.title}</h3>
                 <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* What you can get help with */}
+      <section style={{ padding: '2rem 1.5rem 6rem', background: 'rgba(255,255,255,0.02)' }}>
+        <div className="container" style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h2 style={{ fontSize: '2.2rem', marginBottom: '1rem' }}>What can I get help with?</h2>
+            <p style={{ color: 'var(--text-muted)' }}>Anything! Here are some common examples:</p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
+            {[
+              { text: "🔢 Step-by-step math help" },
+              { text: "📚 Reading together" },
+              { text: "✏️ Writing practice" },
+              { text: "🗣️ Understanding instructions" },
+              { text: "🧩 Breaking down big projects" },
+              { text: "📝 Reviewing a worksheet" }
+            ].map((item, idx) => (
+              <div 
+                key={idx} 
+                className="card" 
+                style={{ 
+                  padding: '1rem 1.5rem', 
+                  borderRadius: '100px', 
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'var(--text-primary)',
+                  fontWeight: 500,
+                  fontSize: '1rem'
+                }}
+              >
+                {item.text}
               </div>
             ))}
           </div>

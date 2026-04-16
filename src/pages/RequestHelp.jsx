@@ -18,8 +18,17 @@ const HELP_EXAMPLES = [
   'Help understanding instructions',
 ];
 
+const FUN_NICKNAMES = [
+  'Blue Panda', 'Happy Tiger', 'Flying Squirrel', 'Clever Owl',
+  'Brave Lion', 'Swift Fox', 'Calm Turtle', 'Joyful Dolphin'
+];
+
 const RequestHelp = () => {
-  const [form, setForm] = useState({ nickname: '', topic: '', timing: '' });
+  const [form, setForm] = useState({ 
+    nickname: FUN_NICKNAMES[Math.floor(Math.random() * FUN_NICKNAMES.length)], 
+    topic: '', 
+    timing: 'Right now' 
+  });
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeRequests, setActiveRequests] = useState([]);
@@ -122,7 +131,8 @@ const RequestHelp = () => {
         <h1 style={{ marginBottom: '0.5rem', fontSize: 'clamp(1.6rem, 4vw, 2.5rem)' }}>
           {editingId ? 'Edit Your Request' : 'Request Help'}
         </h1>
-        <p>Pick any nickname — you're always safe and anonymous here.</p>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Tell us what you need - a real person will join you shortly.</p>
+        <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>🔒 No account needed. Stay anonymous.</p>
       </div>
 
       {/* MATCHED SESSION PROMINENT ALERT */}
@@ -160,34 +170,14 @@ const RequestHelp = () => {
       <div className="card" style={{ opacity: hasLiveSession ? 0.6 : 1, pointerEvents: hasLiveSession ? 'none' : 'auto', borderColor: editingId ? 'var(--primary)' : 'var(--border)' }}>
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
-            <label htmlFor="nickname">How should we call you?</label>
-            <input
-              id="nickname" name="nickname" type="text"
-              placeholder="Pick a nickname you like..."
-              value={form.nickname} onChange={handleChange}
-              maxLength={30} required autoComplete="off"
-              disabled={editingId !== null} // Prevent changing nickname if editing
-              style={{ padding: '1rem', fontSize: '1.1rem', opacity: editingId ? 0.6 : 1 }}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="topic">What would you like to do today?</label>
-            <textarea
-              id="topic" name="topic"
-              placeholder="e.g. I want to read a story with someone..."
-              value={form.topic} onChange={handleChange}
-              rows={3} maxLength={300} required
-              style={{ resize: 'vertical', minHeight: 110, padding: '1rem', fontSize: '1.1rem' }}
-            />
             {!editingId && (
               <>
-                <p style={{ marginTop: '1rem', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Quick ideas:</p>
-                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <label>What do you need help with?</label>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                   {HELP_EXAMPLES.map((ex) => (
                     <button
                       key={ex} type="button" onClick={() => handleExample(ex)}
-                      className="btn btn-secondary btn-sm"
+                      className={`btn ${form.topic === ex ? 'btn-primary' : 'btn-secondary'} btn-sm`}
                       style={{ borderRadius: 50, fontSize: '0.85rem' }}
                     >
                       {ex}
@@ -196,42 +186,89 @@ const RequestHelp = () => {
                 </div>
               </>
             )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="timing">When do you want to start?</label>
-            <input
-              id="timing" name="timing" type="text"
-              placeholder="e.g. Right now!, Later today..."
-              value={form.timing} onChange={handleChange}
-              maxLength={80} required autoComplete="off"
-              style={{ padding: '1rem', fontSize: '1.1rem' }}
+            <label htmlFor="topic">Or describe it in your own words:</label>
+            <textarea
+              id="topic" name="topic"
+              placeholder="I need help with..."
+              value={form.topic} onChange={handleChange}
+              rows={3} maxLength={300} required
+              style={{ resize: 'vertical', minHeight: 110, padding: '1rem', fontSize: '1.1rem' }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <button
-              type="submit" className="btn btn-primary"
-              disabled={submitting || hasLiveSession}
-              id="submit-request-btn"
-              style={{ 
-                flex: 1, justifyContent: 'center', 
-                fontSize: '1.2rem', padding: '1.2rem' 
-              }}
-            >
-              {hasLiveSession ? '⌛ Finish live session first' : (editingId ? (submitting ? 'Updating...' : 'Save Changes') : (submitting ? '✨ Sending...' : '🚀 Let\'s Go!'))}
-            </button>
-            
-            {editingId && (
-              <button 
-                type="button" 
-                className="btn btn-secondary"
-                onClick={handleCancelClick}
-                style={{ fontSize: '1.1rem', padding: '1.2rem' }}
+          <div className="form-group">
+            <label>When do you want to start?</label>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              {['Right now', 'Later today'].map(t => (
+                <button
+                  key={t} type="button"
+                  onClick={() => setForm(prev => ({ ...prev, timing: t }))}
+                  className={`btn ${form.timing === t ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ borderRadius: 50, padding: '0.6rem 1rem' }}
+                >
+                  {t}
+                </button>
+              ))}
+              <button
+                 type="button"
+                 onClick={() => setForm(prev => ({ ...prev, timing: '' }))}
+                 className={`btn ${!['Right now', 'Later today'].includes(form.timing) ? 'btn-primary' : 'btn-secondary'}`}
+                 style={{ borderRadius: 50, padding: '0.6rem 1rem' }}
               >
-                Cancel Edit
+                Pick a time
               </button>
+            </div>
+            {!['Right now', 'Later today'].includes(form.timing) && (
+              <input
+                id="timing" name="timing" type="text"
+                placeholder="Type a specific time (e.g. 4:00 PM)"
+                value={form.timing} onChange={handleChange}
+                maxLength={80} required autoComplete="off"
+                style={{ padding: '1rem', fontSize: '1.1rem', marginTop: '0.5rem' }}
+              />
             )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="nickname">Your Nickname</label>
+            <input
+              id="nickname" name="nickname" type="text"
+              placeholder="Your nickname..."
+              value={form.nickname} onChange={handleChange}
+              maxLength={30} required autoComplete="off"
+              disabled={editingId !== null} // Prevent changing nickname if editing
+              style={{ padding: '1rem', fontSize: '1.1rem', opacity: editingId ? 0.6 : 1 }}
+            />
+          </div>
+
+          <div style={{ marginTop: '2rem' }}>
+            <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>
+              ℹ️ A volunteer will join and help you shortly!
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type="submit" className="btn btn-primary"
+                disabled={submitting || hasLiveSession}
+                id="submit-request-btn"
+                style={{ 
+                  flex: 1, justifyContent: 'center', 
+                  fontSize: '1.2rem', padding: '1.2rem' 
+                }}
+              >
+                {hasLiveSession ? '⌛ Finish live session first' : (editingId ? (submitting ? 'Updating...' : 'Save Changes') : (submitting ? '✨ Connecting...' : '🤝 Connect me to a volunteer'))}
+              </button>
+              
+              {editingId && (
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={handleCancelClick}
+                  style={{ fontSize: '1.1rem', padding: '1.2rem' }}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
@@ -280,9 +317,9 @@ const RequestHelp = () => {
       )}
 
       <div className="card" style={{ marginTop: '3rem', background: 'rgba(108,99,255,0.05)', borderColor: 'rgba(108,99,255,0.2)' }}>
-        <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>🦋 Friendly reminders</h3>
+        <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>🦋 You are in a safe place</h3>
         <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          {['🤝 Help with something new', '🔢 Get through your schoolwork', '✏️ Practice writing together', '🎯 Just talk and have fun!'].map((item) => (
+          {['You can ask anything — big or small', "You don't have to figure it out alone", 'You can leave anytime'].map((item) => (
             <li key={item} style={{ fontSize: '1rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ color: 'var(--primary)' }}>✔</span> {item}
             </li>

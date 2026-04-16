@@ -25,12 +25,6 @@ const Navbar = () => {
         </Link>
 
         <ul className="nav-links">
-          <li>
-            <Link to="/request" className={isActive('/request')}>
-              Get Help
-            </Link>
-          </li>
-
           {user ? (
             <>
               <li>
@@ -55,7 +49,7 @@ const Navbar = () => {
             </>
           ) : (
             <li>
-              <Link to="/volunteer" className="nav-btn">
+              <Link to="/volunteer" className={isActive('/volunteer')}>
                 Volunteer Login
               </Link>
             </li>
