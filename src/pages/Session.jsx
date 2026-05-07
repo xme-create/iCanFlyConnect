@@ -111,6 +111,18 @@ const Session = () => {
     }
   };
 
+  const handleEndSessionClick = async () => {
+    if (!window.confirm('Do you want to permanently end this session?')) {
+      return;
+    }
+
+    try {
+      await endSession(sessionId, startMs || Date.now(), Boolean(session?.extended));
+    } catch (error) {
+      console.error('Could not end session:', error);
+    }
+  };
+
   const handleSessionEnd = () => {};
 
   if (loading || authLoading) {
@@ -133,7 +145,7 @@ const Session = () => {
   return (
     <div
       style={{
-        padding: isMobile ? '0.5rem' : '1rem',
+        padding: isMobile ? '0.4rem' : '1rem',
         maxWidth: '1400px',
         margin: '0 auto',
         height: isMobile ? 'calc(100vh - 80px)' : 'auto',
@@ -144,11 +156,11 @@ const Session = () => {
       <div
         className="card"
         style={{
-          marginBottom: isMobile ? '0.5rem' : '1.25rem',
-          padding: isMobile ? '1rem' : '1.25rem 1.5rem',
+          marginBottom: isMobile ? '0.4rem' : '1.25rem',
+          padding: isMobile ? '0.75rem 0.85rem' : '1.25rem 1.5rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '1rem',
+          gap: isMobile ? '0.6rem' : '1rem',
           flexWrap: 'wrap',
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.08)',
@@ -173,11 +185,11 @@ const Session = () => {
         )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: isMobile ? '1.1rem' : '1.4rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.45rem' : '0.75rem', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0, fontSize: isMobile ? '1rem' : '1.4rem', lineHeight: 1.2 }}>
               {isVolunteer ? `Helping ${session.studentNickname}` : `Sharing with ${session.volunteerName}`}
             </h2>
-            <span className="badge badge-active" style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
+            <span className="badge badge-active" style={{ fontSize: isMobile ? '0.7rem' : '0.75rem', padding: isMobile ? '0.15rem 0.5rem' : '0.2rem 0.6rem' }}>
               Live Ahora
             </span>
             {isVolunteer && session.studentJoined && (
@@ -187,15 +199,26 @@ const Session = () => {
                   background: 'rgba(255, 107, 174, 0.15)',
                   color: 'var(--secondary)',
                   border: '1px solid rgba(255, 107, 174, 0.3)',
-                  fontSize: '0.75rem',
-                  padding: '0.2rem 0.6rem',
+                  fontSize: isMobile ? '0.7rem' : '0.75rem',
+                  padding: isMobile ? '0.15rem 0.5rem' : '0.2rem 0.6rem',
                 }}
               >
                 Student Arrived!
               </span>
             )}
           </div>
-          {!isMobile && (
+          {isMobile ? (
+            <p
+              style={{
+                margin: '0.2rem 0 0',
+                fontSize: '0.83rem',
+                color: 'var(--text-muted)',
+                lineHeight: 1.35,
+              }}
+            >
+              {session.topic}
+            </p>
+          ) : (
             <p style={{ margin: '0.25rem 0 0', fontSize: '1rem', color: 'var(--text-secondary)' }}>
               {session.topic}
             </p>
@@ -213,35 +236,6 @@ const Session = () => {
           </button>
         )}
 
-        {isMobile && startMs && (
-          <div style={{ width: '100%', marginTop: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
-            {isVolunteer && (
-              <SessionTimer
-                sessionId={sessionId}
-                startTimeMs={startMs}
-                isVolunteer={isVolunteer}
-                onEnd={handleSessionEnd}
-              />
-            )}
-            {!isVolunteer && (
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{ width: '100%', marginTop: isVolunteer ? '0.5rem' : 0, justifyContent: 'center' }}
-                onClick={async () => {
-                  if (window.confirm('Do you want to permanently end this session?')) {
-                    try {
-                      await endSession(sessionId, startMs || Date.now(), Boolean(session.extended));
-                    } catch (error) {
-                      console.error('Could not end session:', error);
-                    }
-                  }
-                }}
-              >
-                End Session
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       <div
@@ -260,10 +254,10 @@ const Session = () => {
               display: 'flex',
               flexWrap: 'wrap',
               gap: '0.4rem',
-              marginBottom: '0.5rem',
+              marginBottom: isMobile ? '0.4rem' : '0.5rem',
               background: 'rgba(255,255,255,0.04)',
               borderRadius: 'var(--radius-md)',
-              padding: '4px',
+              padding: isMobile ? '3px' : '4px',
               border: '1px solid rgba(255,255,255,0.08)',
             }}
           >
@@ -276,11 +270,11 @@ const Session = () => {
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   flex: '1 1 120px',
-                  padding: '0.5rem 0.5rem',
+                  padding: isMobile ? '0.42rem 0.45rem' : '0.5rem 0.5rem',
                   borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
                   fontWeight: 800,
-                  fontSize: '0.9rem',
+                  fontSize: isMobile ? '0.85rem' : '0.9rem',
                   border: 'none',
                   fontFamily: 'var(--font)',
                   background: activeTab === tab.id ? 'var(--primary)' : 'transparent',
@@ -299,7 +293,7 @@ const Session = () => {
             style={{
               flex: 1,
               minHeight: isMobile ? '0' : '400px',
-              maxHeight: isMobile ? 'calc(100vh - 220px)' : activeTab === 'video' ? '560px' : '620px',
+              maxHeight: isMobile ? 'calc(100vh - 180px)' : activeTab === 'video' ? '560px' : '620px',
             }}
           >
             {activeTab === 'video' ? (
@@ -367,6 +361,38 @@ const Session = () => {
           </div>
         )}
       </div>
+
+      {isMobile && startMs && (
+        <div
+          className="card"
+          style={{
+            marginTop: '0.4rem',
+            padding: '0.7rem 0.85rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.6rem',
+            background: 'rgba(10,9,24,0.55)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <SessionTimer
+            sessionId={sessionId}
+            startTimeMs={startMs}
+            isVolunteer={isVolunteer}
+            onEnd={handleSessionEnd}
+          />
+
+          {!isVolunteer && (
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ width: '100%', justifyContent: 'center' }}
+              onClick={handleEndSessionClick}
+            >
+              End Session
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

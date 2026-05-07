@@ -275,14 +275,14 @@ const RequestHelp = () => {
 
           <div className="form-group" style={{ marginBottom: '1rem' }}>
             <label>When do you want to start?</label>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div className="request-timing-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               {['Right now', 'Later today'].map((timing) => (
                 <button
                   key={timing}
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, timing }))}
                   className={`btn ${form.timing === timing ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ borderRadius: 999, padding: '0.55rem 0.9rem' }}
+                  style={{ borderRadius: 999, padding: '0.48rem 0.8rem', fontSize: '0.9rem' }}
                 >
                   {timing}
                 </button>
@@ -291,7 +291,7 @@ const RequestHelp = () => {
                 type="button"
                 onClick={() => setForm((prev) => ({ ...prev, timing: '' }))}
                 className={`btn ${!['Right now', 'Later today'].includes(form.timing) ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ borderRadius: 999, padding: '0.55rem 0.9rem' }}
+                style={{ borderRadius: 999, padding: '0.48rem 0.8rem', fontSize: '0.9rem' }}
               >
                 Pick a time
               </button>
