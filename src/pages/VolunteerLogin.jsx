@@ -10,9 +10,13 @@ const VolunteerLogin = () => {
   const [loading, setLoading] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { loading: authLoading, isVolunteer } = useAuth();
 
-  if (user) {
+  if (authLoading) {
+    return <div className="spinner" style={{ marginTop: '4rem' }} />;
+  }
+
+  if (isVolunteer) {
     navigate('/dashboard');
     return null;
   }

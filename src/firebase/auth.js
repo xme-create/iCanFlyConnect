@@ -1,6 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInAnonymously,
   signOut,
   onAuthStateChanged,
   updateProfile,
@@ -45,6 +46,12 @@ export const loginWithGoogle = async () => {
       joinedAt: serverTimestamp(),
     });
   }
+  return cred.user;
+};
+
+export const ensureAnonymousSession = async () => {
+  if (auth.currentUser) return auth.currentUser;
+  const cred = await signInAnonymously(auth);
   return cred.user;
 };
 

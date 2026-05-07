@@ -12,23 +12,25 @@ const formatDate = (ts) => {
 };
 
 const History = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading, isVolunteer } = useAuth();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { navigate('/volunteer'); return; }
+    if (authLoading) return;
+    if (!isVolunteer || !user) { navigate('/volunteer'); return; }
     const unsub = listenToVolunteerHistory(user.uid, (data) => {
       setSessions(data);
       setLoading(false);
     });
     return unsub;
-  }, [user]);
+  }, [authLoading, isVolunteer, navigate, user]);
 
   const totalMinutes = sessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
 
-  if (!user) return null;
+  if (authLoading) return <div className="spinner" style={{ marginTop: '4rem' }} />;
+  if (!isVolunteer || !user) return null;
 
   return (
     <div className="page">

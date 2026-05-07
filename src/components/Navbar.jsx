@@ -5,7 +5,7 @@ import { logoutVolunteer } from '../firebase/auth';
 import { useToast } from '../context/ToastContext';
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const { isVolunteer } = useAuth();
   const location = useLocation();
   const toast = useToast();
 
@@ -25,7 +25,7 @@ const Navbar = () => {
         </Link>
 
         <ul className="nav-links">
-          {user ? (
+          {isVolunteer ? (
             <>
               <li>
                 <Link to="/dashboard" className={isActive('/dashboard')}>

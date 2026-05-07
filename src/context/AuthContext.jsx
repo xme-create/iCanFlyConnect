@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthChange, getVolunteerProfile } from '../firebase/auth';
+import { onAuthChange, getVolunteerProfile, ensureAnonymousSession } from '../firebase/auth';
 
 const AuthContext = createContext(null);
 
@@ -9,20 +9,46 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    return onAuthChange(async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        const vol = await getVolunteerProfile(firebaseUser.uid);
-        setProfile(vol);
-      } else {
+    let isMounted = true;
+
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          if (firebaseUser.isAnonymous) {
+            setProfile(null);
+          } else {
+            const vol = await getVolunteerProfile(firebaseUser.uid);
+            if (!isMounted) return;
+            setProfile(vol);
+          }
+          if (isMounted) {
+            setLoading(false);
+          }
+          return;
+        }
+
+        setUser(null);
         setProfile(null);
+        await ensureAnonymousSession();
+      } catch (error) {
+        console.error('Failed to initialize auth session:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
+  const isVolunteer = !!profile;
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile, loading, isVolunteer }}>
       {children}
     </AuthContext.Provider>
   );

@@ -36,14 +36,18 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
 
   useEffect(() => {
     if (!sessionId) return;
-    const unsub = listenToMessages(sessionId, (msg) => {
-      setMessages((prev) => {
-        if (prev.find((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-    });
+    const unsub = listenToMessages(
+      sessionId,
+      (nextMessages) => {
+        setMessages(nextMessages);
+      },
+      (error) => {
+        console.error('Failed to listen to chat messages:', error);
+        toast('Chat could not connect. Please refresh and try again.', 'error');
+      }
+    );
     return unsub;
-  }, [sessionId]);
+  }, [sessionId, toast]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,13 +59,19 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
     if (!trimmed || sending) return;
     setSending(true);
     setInputText('');
-    await sendMessage(sessionId, {
-      sender: myRole,
-      senderName: myName,
-      text: trimmed,
-    });
-    setSending(true); // Small delay to prevent double-tap
-    setSending(false);
+    try {
+      await sendMessage(sessionId, {
+        sender: myRole,
+        senderName: myName,
+        text: trimmed,
+      });
+    } catch (error) {
+      console.error('Failed to send chat message:', error);
+      setInputText(trimmed);
+      toast('Message could not be sent. Please try again.', 'error');
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleVoiceToggle = () => {
@@ -91,19 +101,25 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
     setSending(true);
     toast('Uploading file...', 'info');
     try {
-      const { url, type } = await uploadFile(sessionId, file);
+      const uploadResult = await uploadFile(sessionId, file);
       await sendMessage(sessionId, {
         sender: myRole,
         senderName: myName,
         text: `Shared a file: ${file.name}`,
-        fileUrl: url,
-        fileType: type,
+        fileUrl: uploadResult.url,
+        fileType: uploadResult.type,
+        fileName: uploadResult.name,
       });
+      if (uploadResult.inline) {
+        toast('File sent with chat fallback mode.', 'info');
+      }
     } catch (err) {
-      toast('Failed to upload file.', 'error');
+      toast(err?.message || 'Failed to upload file.', 'error');
+      console.error('Failed to upload chat file:', err);
+    } finally {
+      setSending(false);
+      e.target.value = '';
     }
-    setSending(false);
-    e.target.value = ''; // Reset input
   };
 
   return (
@@ -154,13 +170,13 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
                       }} />
                     </a>
                   ) : (
-                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ 
+                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" download={msg.fileName || true} style={{ 
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
                       padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: 8,
                       color: 'inherit', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)'
                     }}>
                       <span>📄</span>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Download File</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{msg.fileName || 'Download File'}</span>
                     </a>
                   )}
                 </div>
@@ -175,8 +191,8 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.03)', borderTop: '1px solid var(--border)' }}>
-        <form onSubmit={handleSend} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+      <div className="chat-compose-wrap" style={{ padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.03)', borderTop: '1px solid var(--border)' }}>
+        <form onSubmit={handleSend} className="chat-compose">
           <input
             type="file"
             ref={fileInputRef}
@@ -185,7 +201,7 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
           />
           <button 
             type="button" 
-            className={`btn btn-sm ${sending ? 'btn-disabled' : 'btn-secondary'}`}
+            className={`chat-icon-btn btn btn-sm ${sending ? 'btn-disabled' : 'btn-secondary'}`}
             onClick={handleFileClick} 
             disabled={sending}
             title="Upload File"
@@ -196,7 +212,7 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
           
           <button 
             type="button" 
-            className={`btn btn-sm ${isListening ? 'btn-danger' : 'btn-secondary'}`}
+            className={`chat-icon-btn btn btn-sm ${isListening ? 'btn-danger' : 'btn-secondary'}`}
             onClick={handleVoiceToggle} 
             disabled={sending}
             title="Voice Input"
@@ -216,6 +232,7 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
             onChange={(e) => setInputText(e.target.value)}
             disabled={sending}
             autoComplete="off"
+            className="chat-text-input"
             style={{ 
               flex: 1, padding: '0.75rem 1.25rem', borderRadius: 100, 
               background: 'rgba(255,255,255,0.05)', fontSize: '1rem',
@@ -226,7 +243,7 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
           
           <button
             type="submit"
-            className="btn btn-primary"
+            className="chat-send-btn btn btn-primary"
             disabled={!inputText.trim() || sending}
             id="chat-send-btn"
             style={{ padding: '0.75rem 1.5rem', borderRadius: 100, fontWeight: 700 }}

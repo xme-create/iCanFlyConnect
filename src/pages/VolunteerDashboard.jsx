@@ -8,7 +8,7 @@ import RequestCard from '../components/RequestCard';
 import { getFavorites } from '../firebase/favorites';
 
 const VolunteerDashboard = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading, isVolunteer } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -19,14 +19,15 @@ const VolunteerDashboard = () => {
   const [sortBy, setSortBy] = useState('requested'); // 'requested' | 'needed'
 
   useEffect(() => {
-    if (!user) { navigate('/volunteer'); return; }
+    if (authLoading) return;
+    if (!isVolunteer || !user) { navigate('/volunteer'); return; }
     const unsub = listenToQueue((requests) => {
       setQueue(requests);
       setLoading(false);
     });
     getFavorites().then(setFavorites);
     return unsub;
-  }, [user]);
+  }, [authLoading, isVolunteer, navigate, user]);
 
   const handleAccept = async (requestId) => {
     const req = queue.find((r) => r.id === requestId);
@@ -80,7 +81,8 @@ const VolunteerDashboard = () => {
     });
   }
 
-  if (!user) return null;
+  if (authLoading) return <div className="spinner" style={{ marginTop: '4rem' }} />;
+  if (!isVolunteer || !user) return null;
 
   return (
     <div className="page">
