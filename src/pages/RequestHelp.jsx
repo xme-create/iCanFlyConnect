@@ -71,8 +71,7 @@ const RequestHelp = () => {
 
     if (previousMatchedIdRef.current !== matchedRequest.id) {
       previousMatchedIdRef.current = matchedRequest.id;
-      matchedBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      matchedBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [matchedRequest]);
 
