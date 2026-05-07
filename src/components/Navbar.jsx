@@ -8,20 +8,28 @@ const Navbar = () => {
   const { isVolunteer } = useAuth();
   const location = useLocation();
   const toast = useToast();
+  const isInSession = location.pathname.startsWith('/session/');
 
   const handleLogout = async () => {
+    if (isInSession) {
+      toast('Leave or end the current session before signing out.', 'warning');
+      return;
+    }
+
     await logoutVolunteer();
-    toast('Logged out. See you soon! 👋', 'info');
+    toast('Logged out. See you soon!', 'info');
   };
 
-  const isActive = (path) => location.pathname === path ? 'active' : '';
+  const isActive = (path) => (location.pathname === path ? 'active' : '');
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="inner">
         <Link to="/" className="logo" aria-label="iCanFlyConnect home">
           <span>🦋</span>
-          <span>iCanFly<span style={{ color: 'var(--secondary)' }}>Connect</span></span>
+          <span>
+            iCanFly<span style={{ color: 'var(--secondary)' }}>Connect</span>
+          </span>
         </Link>
 
         <ul className="nav-links">
@@ -38,11 +46,18 @@ const Navbar = () => {
                 </Link>
               </li>
               <li>
-                <button onClick={handleLogout} className="nav-links" style={{
-                  background: 'none', color: 'var(--text-secondary)',
-                  fontWeight: 700, padding: '0.5rem 1rem', borderRadius: '50px',
-                  transition: 'all 0.25s'
-                }}>
+                <button
+                  onClick={handleLogout}
+                  className="nav-links"
+                  style={{
+                    background: 'none',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 700,
+                    padding: '0.5rem 1rem',
+                    borderRadius: '50px',
+                    transition: 'all 0.25s',
+                  }}
+                >
                   Sign Out
                 </button>
               </li>

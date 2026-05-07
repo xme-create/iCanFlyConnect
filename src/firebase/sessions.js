@@ -45,7 +45,14 @@ export const endSession = async (sessionId, startTimeMs, extended) => {
   const durationMinutes = Math.round((endTime - startTimeMs) / 60000);
 
   const snap = await getDoc(doc(db, 'sessions', sessionId));
-  const { volunteerId, requestId } = snap.data();
+  if (!snap.exists()) {
+    return 0;
+  }
+  const { volunteerId, requestId, status, durationMinutes: savedDurationMinutes = 0 } = snap.data();
+
+  if (status === 'ended') {
+    return savedDurationMinutes;
+  }
 
   await updateDoc(doc(db, 'sessions', sessionId), {
     endTime: serverTimestamp(),

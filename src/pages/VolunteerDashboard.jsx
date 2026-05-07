@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { listenToQueue, acceptRequest, getRequest } from '../firebase/requests';
-import { createSession } from '../firebase/sessions';
 import { useToast } from '../context/ToastContext';
-import RequestCard from '../components/RequestCard';
 import { getFavorites } from '../firebase/favorites';
+import { acceptRequest, getRequest } from '../firebase/requests';
+import { createSession, endSession, listenToVolunteerHistory } from '../firebase/sessions';
+import RequestCard from '../components/RequestCard';
+import { listenToQueue } from '../firebase/requests';
 
 const VolunteerDashboard = () => {
   const { user, profile, loading: authLoading, isVolunteer } = useAuth();
@@ -15,28 +16,52 @@ const VolunteerDashboard = () => {
   const [queue, setQueue] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');      // 'all' | 'favorites'
-  const [sortBy, setSortBy] = useState('requested'); // 'requested' | 'needed'
+  const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('requested');
+  const [sessions, setSessions] = useState([]);
+  const [endingId, setEndingId] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!isVolunteer || !user) { navigate('/volunteer'); return; }
-    const unsub = listenToQueue((requests) => {
+    if (!isVolunteer || !user) {
+      navigate('/volunteer');
+      return;
+    }
+
+    const unsubQueue = listenToQueue((requests) => {
       setQueue(requests);
       setLoading(false);
     });
+    const unsubSessions = listenToVolunteerHistory(user.uid, setSessions);
     getFavorites().then(setFavorites);
-    return unsub;
+
+    return () => {
+      unsubQueue();
+      unsubSessions();
+    };
   }, [authLoading, isVolunteer, navigate, user]);
 
+  const activeSession = useMemo(
+    () =>
+      sessions
+        .filter((session) => session.status === 'active')
+        .sort((a, b) => (b.startTime?.seconds ?? 0) - (a.startTime?.seconds ?? 0))[0] || null,
+    [sessions]
+  );
+
   const handleAccept = async (requestId) => {
-    const req = queue.find((r) => r.id === requestId);
+    if (activeSession) {
+      toast('Finish or resume your active session before starting a new one.', 'warning');
+      return;
+    }
+
+    const req = queue.find((item) => item.id === requestId);
     if (!req) return;
+
     try {
-      // Re-fetch request to ensure it is still pending
       const latestReq = await getRequest(requestId);
       if (!latestReq || latestReq.status !== 'pending') {
-        toast('This request was already taken! 🦋', 'info');
+        toast('This request was already taken!', 'info');
         return;
       }
 
@@ -47,34 +72,49 @@ const VolunteerDashboard = () => {
         studentNickname: req.nickname,
         topic: req.topic,
       });
-      await acceptRequest(requestId, {
-        uid: user.uid,
-        displayName: profile?.displayName || user.displayName || 'Volunteer',
-      }, sessionId);
-      toast('Session started! Get ready to help 🚀', 'success');
+      await acceptRequest(
+        requestId,
+        {
+          uid: user.uid,
+          displayName: profile?.displayName || user.displayName || 'Volunteer',
+        },
+        sessionId
+      );
+      toast('Session started! Get ready to help.', 'success');
       navigate(`/session/${sessionId}`);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       toast('Could not accept request. Please try again.', 'error');
     }
   };
 
-  // Filter
-  let displayed = filter === 'favorites'
-    ? queue.filter((r) => r.volunteerId && favorites.includes(r.volunteerId))
-    : [...queue];
+  const handleEndActive = async () => {
+    if (!activeSession) return;
+    const startTimeMs = activeSession.startTime?.seconds ? activeSession.startTime.seconds * 1000 : Date.now();
+    setEndingId(activeSession.id);
+    try {
+      await endSession(activeSession.id, startTimeMs, Boolean(activeSession.extended));
+      toast('Active session closed.', 'success');
+    } catch (error) {
+      console.error('Could not end active session from dashboard:', error);
+      toast('Could not close that active session. Please try again.', 'error');
+    } finally {
+      setEndingId(null);
+    }
+  };
 
-  // Sort
+  let displayed =
+    filter === 'favorites'
+      ? queue.filter((request) => request.volunteerId && favorites.includes(request.volunteerId))
+      : [...queue];
+
   if (sortBy === 'requested') {
-    // Oldest first — who's been waiting longest
     displayed.sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
   } else {
-    // Sort by "when do you need help" text — alphabetical as a best-effort
-    // ASAP / tonight / tomorrow etc. — put 'ASAP' first naively
     displayed.sort((a, b) => {
       const ta = (a.timing || '').toLowerCase();
       const tb = (b.timing || '').toLowerCase();
-      const asap = (s) => s.includes('asap') || s.includes('now') || s.includes('urgent');
+      const asap = (value) => value.includes('asap') || value.includes('now') || value.includes('urgent');
       if (asap(ta) && !asap(tb)) return -1;
       if (!asap(ta) && asap(tb)) return 1;
       return ta.localeCompare(tb);
@@ -88,34 +128,37 @@ const VolunteerDashboard = () => {
     <div className="page">
       <div className="section-header">
         <div>
-          <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', marginBottom: '0.25rem' }}>
-            Help Queue
-          </h1>
-          <p>Hey {profile?.displayName || user.displayName}! 👋 Pick a student to help today.</p>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', marginBottom: '0.25rem' }}>Help Queue</h1>
+          <p>Hey {profile?.displayName || user.displayName}! Pick a student to help today.</p>
         </div>
 
-        {/* Filter + Sort controls */}
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.5rem' }}>
-          {/* Filter */}
-          {['all', 'favorites'].map((f) => (
+          {['all', 'favorites'].map((value) => (
             <button
-              key={f}
-              id={`filter-${f}-btn`}
-              onClick={() => setFilter(f)}
-              className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
+              key={value}
+              id={`filter-${value}-btn`}
+              onClick={() => setFilter(value)}
+              className={`btn btn-sm ${filter === value ? 'btn-primary' : 'btn-secondary'}`}
               style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
             >
-              {f === 'all' ? '📋 All' : '⭐ Favs'}
+              {value === 'all' ? 'All' : 'Favs'}
             </button>
           ))}
 
-          {/* Sort */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.2rem',
-            background: 'rgba(255,255,255,0.04)', borderRadius: 50,
-            padding: '0.2rem 0.4rem', border: '1px solid var(--border)',
-          }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, margin: '0 0.2rem' }}>Sort:</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.2rem',
+              background: 'rgba(255,255,255,0.04)',
+              borderRadius: 50,
+              padding: '0.2rem 0.4rem',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, margin: '0 0.2rem' }}>
+              Sort:
+            </span>
             {[
               { key: 'requested', label: 'Wait' },
               { key: 'needed', label: 'Needed' },
@@ -127,9 +170,14 @@ const VolunteerDashboard = () => {
                 style={{
                   background: sortBy === key ? 'var(--primary)' : 'transparent',
                   color: sortBy === key ? 'white' : 'var(--text-secondary)',
-                  border: 'none', borderRadius: 50, padding: '0.2rem 0.6rem',
-                  fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
-                  fontFamily: 'var(--font)', transition: 'all 0.2s',
+                  border: 'none',
+                  borderRadius: 50,
+                  padding: '0.2rem 0.6rem',
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                  transition: 'all 0.2s',
                 }}
               >
                 {label}
@@ -139,6 +187,29 @@ const VolunteerDashboard = () => {
         </div>
       </div>
 
+      {activeSession && (
+        <div
+          className="card"
+          style={{
+            marginBottom: '1.5rem',
+            background: 'rgba(251,191,36,0.08)',
+            borderColor: 'rgba(251,191,36,0.35)',
+          }}
+        >
+          <h3 style={{ marginBottom: '0.75rem' }}>You already have an active session</h3>
+          <p style={{ marginBottom: '1rem' }}>
+            Resume or end it before taking a new request.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={() => navigate(`/session/${activeSession.id}`)}>
+              Resume Session
+            </button>
+            <button className="btn btn-secondary" onClick={handleEndActive} disabled={endingId === activeSession.id}>
+              {endingId === activeSession.id ? 'Ending...' : 'End Active Session'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading && <div className="spinner" />}
 
@@ -150,27 +221,20 @@ const VolunteerDashboard = () => {
         </div>
       )}
 
-      {/* Sort info banner when results exist */}
       {!loading && displayed.length > 0 && (
         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
           {sortBy === 'requested'
-            ? `Showing ${displayed.length} request${displayed.length !== 1 ? 's' : ''} — oldest first (waiting longest)`
-            : `Showing ${displayed.length} request${displayed.length !== 1 ? 's' : ''} — sorted by when help is needed`}
+            ? `Showing ${displayed.length} request${displayed.length !== 1 ? 's' : ''} - oldest first (waiting longest)`
+            : `Showing ${displayed.length} request${displayed.length !== 1 ? 's' : ''} - sorted by when help is needed`}
         </p>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
-        {displayed.map((req) => (
-          <RequestCard
-            key={req.id}
-            request={req}
-            onAccept={handleAccept}
-            favorites={favorites}
-          />
+        {displayed.map((request) => (
+          <RequestCard key={request.id} request={request} onAccept={handleAccept} favorites={favorites} />
         ))}
       </div>
 
-      {/* Volunteer stats moved to bottom */}
       {profile && (
         <div className="card" style={{ marginTop: '3rem', background: 'rgba(108,99,255,0.07)', borderColor: 'rgba(108,99,255,0.2)' }}>
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>

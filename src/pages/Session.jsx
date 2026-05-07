@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useBeforeUnload, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { addFavorite, isFavorite, removeFavorite } from '../firebase/favorites';
@@ -24,6 +24,8 @@ const Session = () => {
 
   const endNoticeShownRef = useRef(false);
   const redirectTimeoutRef = useRef(null);
+  const leaveAfterEndingRef = useRef(false);
+  const hasActiveSession = !loading && session?.status === 'active' && !!startMs;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900);
@@ -31,8 +33,15 @@ const Session = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useBeforeUnload((event) => {
+    if (!hasActiveSession) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
   useEffect(() => {
     endNoticeShownRef.current = false;
+    leaveAfterEndingRef.current = false;
     if (redirectTimeoutRef.current) {
       clearTimeout(redirectTimeoutRef.current);
       redirectTimeoutRef.current = null;
@@ -59,9 +68,12 @@ const Session = () => {
       if (data.status === 'ended' && !endNoticeShownRef.current) {
         endNoticeShownRef.current = true;
         toast('Session finished! You did great today.', 'info');
-        redirectTimeoutRef.current = setTimeout(() => {
-          navigate(isVolunteer ? '/history' : '/');
-        }, 3000);
+
+        if (!leaveAfterEndingRef.current) {
+          redirectTimeoutRef.current = setTimeout(() => {
+            navigate(isVolunteer ? '/history' : '/');
+          }, 3000);
+        }
       }
     });
 
@@ -216,7 +228,7 @@ const Session = () => {
                 onClick={async () => {
                   if (window.confirm('Do you want to permanently end this session?')) {
                     try {
-                      await endSession(sessionId, startMs || Date.now(), false);
+                      await endSession(sessionId, startMs || Date.now(), Boolean(session.extended));
                     } catch (error) {
                       console.error('Could not end session:', error);
                     }
@@ -320,7 +332,7 @@ const Session = () => {
                   onClick={async () => {
                     if (window.confirm('Do you want to permanently end this session?')) {
                       try {
-                        await endSession(sessionId, startMs || Date.now(), false);
+                        await endSession(sessionId, startMs || Date.now(), Boolean(session.extended));
                       } catch (error) {
                         console.error('Could not end session:', error);
                       }

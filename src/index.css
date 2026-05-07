@@ -559,8 +559,20 @@ p  { color: var(--text-secondary); }
 .chat-compose {
   display: flex;
   gap: 0.75rem;
-  align-items: center;
+  align-items: flex-end;
   width: 100%;
+  min-width: 0;
+}
+
+.chat-compose-tools {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.chat-compose-editor {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -569,7 +581,7 @@ p  { color: var(--text-secondary); }
 }
 
 .chat-text-input {
-  flex: 1 1 auto;
+  display: block;
   min-width: 0;
 }
 
@@ -627,14 +639,26 @@ p  { color: var(--text-secondary); }
   }
 
   .chat-compose {
-    display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 0.65rem;
-    align-items: center;
+    align-items: stretch;
+  }
+
+  .chat-compose-tools {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .chat-compose-editor {
+    width: 100%;
+  }
+
+  .chat-text-input {
+    min-height: 96px;
   }
 
   .chat-send-btn {
-    grid-column: 1 / -1;
     width: 100%;
     justify-content: center;
   }
