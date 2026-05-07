@@ -4,6 +4,46 @@ import { useToast } from '../context/ToastContext';
 
 const MAX_TEXTAREA_HEIGHT = 160;
 
+const PaperclipIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <path
+      d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.2-9.19a4 4 0 0 1 5.65 5.66l-9.2 9.19a2 2 0 1 1-2.82-2.83l8.49-8.48"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const MicIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <path
+      d="M12 3a3 3 0 0 0-3 3v6a3 3 0 1 0 6 0V6a3 3 0 0 0-3-3Z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const StopIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" />
+  </svg>
+);
+
 const ChatRoom = ({ sessionId, myName, myRole }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -112,7 +152,7 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
       return;
     }
 
-    if (!window.isSecureContext && location.hostname !== 'localhost') {
+    if (!window.isSecureContext && window.location.hostname !== 'localhost') {
       toast('Voice input needs a secure HTTPS page to work on mobile browsers.', 'error');
       return;
     }
@@ -330,9 +370,10 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
                 onClick={handleFileClick}
                 disabled={sending}
                 title="Upload File"
-                style={{ padding: '0.6rem', borderRadius: 12, minWidth: 44, height: 44, fontSize: '1rem' }}
+                aria-label="Upload File"
+                style={{ padding: '0.6rem', borderRadius: 999, width: 44, height: 44, justifyContent: 'center', lineHeight: 0 }}
               >
-                Attach
+                <PaperclipIcon />
               </button>
 
               <button
@@ -341,16 +382,18 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
                 onClick={handleVoiceToggle}
                 disabled={sending}
                 title="Voice Input"
+                aria-label={isListening ? 'Stop Voice Input' : 'Start Voice Input'}
                 style={{
                   padding: '0.6rem',
-                  borderRadius: 12,
-                  minWidth: 44,
+                  borderRadius: 999,
+                  width: 44,
                   height: 44,
-                  fontSize: '1rem',
+                  justifyContent: 'center',
+                  lineHeight: 0,
                   animation: isListening ? 'pulse-red 1.5s infinite' : 'none',
                 }}
               >
-                {isListening ? 'Stop Mic' : 'Mic'}
+                {isListening ? <StopIcon /> : <MicIcon />}
               </button>
             </div>
 
