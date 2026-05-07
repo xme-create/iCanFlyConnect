@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   submitHelpRequest, 
@@ -33,6 +33,8 @@ const RequestHelp = () => {
   const [submitting, setSubmitting] = useState(false);
   const [activeRequests, setActiveRequests] = useState([]);
   const [checking, setChecking] = useState(true);
+  const matchedBannerRef = useRef(null);
+  const previousMatchedIdRef = useRef(null);
   
   const toast = useToast();
   const navigate = useNavigate();
@@ -124,6 +126,19 @@ const RequestHelp = () => {
   const matchedRequest = activeRequests.find(r => r.status === 'matched');
   const pendingRequests = activeRequests.filter(r => r.status === 'pending');
 
+  useEffect(() => {
+    if (!matchedRequest?.id) {
+      previousMatchedIdRef.current = null;
+      return;
+    }
+
+    if (previousMatchedIdRef.current !== matchedRequest.id) {
+      previousMatchedIdRef.current = matchedRequest.id;
+      matchedBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [matchedRequest]);
+
   return (
     <div className="page" style={{ maxWidth: 620, margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem' }}>
@@ -137,7 +152,7 @@ const RequestHelp = () => {
 
       {/* MATCHED SESSION PROMINENT ALERT */}
       {matchedRequest && (
-        <div className="card" style={{
+        <div ref={matchedBannerRef} className="card" style={{
           marginBottom: '2rem', textAlign: 'center', padding: '1.5rem',
           background: 'rgba(74,222,128,0.1)', borderColor: 'var(--success)',
           boxShadow: '0 0 20px rgba(74,222,128,0.1)'

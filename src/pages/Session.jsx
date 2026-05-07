@@ -215,16 +215,18 @@ const Session = () => {
 
         {isMobile && startMs && (
           <div style={{ width: '100%', marginTop: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
-            <SessionTimer
-              sessionId={sessionId}
-              startTimeMs={startMs}
-              isVolunteer={isVolunteer}
-              onEnd={handleSessionEnd}
-            />
+            {isVolunteer && (
+              <SessionTimer
+                sessionId={sessionId}
+                startTimeMs={startMs}
+                isVolunteer={isVolunteer}
+                onEnd={handleSessionEnd}
+              />
+            )}
             {!isVolunteer && (
               <button
                 className="btn btn-secondary btn-sm"
-                style={{ width: '100%', marginTop: '0.5rem', justifyContent: 'center' }}
+                style={{ width: '100%', marginTop: isVolunteer ? '0.5rem' : 0, justifyContent: 'center' }}
                 onClick={async () => {
                   if (window.confirm('Do you want to permanently end this session?')) {
                     try {
@@ -297,7 +299,7 @@ const Session = () => {
             style={{
               flex: 1,
               minHeight: isMobile ? '0' : '400px',
-              maxHeight: isMobile ? 'calc(100vh - 280px)' : activeTab === 'video' ? '560px' : '620px',
+              maxHeight: isMobile ? 'calc(100vh - 220px)' : activeTab === 'video' ? '560px' : '620px',
             }}
           >
             {activeTab === 'video' ? (

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { sendMessage, listenToMessages, uploadFile } from '../firebase/chat';
+import { listenToMessages, sendMessage, uploadFile } from '../firebase/chat';
 import { useToast } from '../context/ToastContext';
 
 const MAX_TEXTAREA_HEIGHT = 160;
@@ -189,8 +189,7 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
           gap: '0.75rem',
         }}
       >
-        <span style={{ fontSize: '1.25rem' }}>💬</span>
-        <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>Chat</span>
+        <span style={{ fontSize: '1.25rem' }}>Chat</span>
       </div>
 
       <div className="chat-messages" style={{ flex: 1, padding: '1.5rem' }}>
@@ -205,8 +204,8 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
               gap: '1rem',
             }}
           >
-            <div style={{ fontSize: '3rem', opacity: 0.5 }}>✨</div>
-            <p>Ready to collaborate! Say hello! 👋</p>
+            <div style={{ fontSize: '3rem', opacity: 0.5 }}>...</div>
+            <p>Ready to collaborate! Say hello!</p>
           </div>
         )}
 
@@ -269,7 +268,7 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
                         border: '1px solid rgba(255,255,255,0.1)',
                       }}
                     >
-                      <span>📄</span>
+                      <span>File</span>
                       <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
                         {msg.fileName || 'Download File'}
                       </span>
@@ -295,37 +294,6 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
       >
         <form onSubmit={handleSend} className="chat-compose">
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
-
-          <div className="chat-compose-tools">
-            <button
-              type="button"
-              className={`chat-icon-btn btn btn-sm ${sending ? 'btn-disabled' : 'btn-secondary'}`}
-              onClick={handleFileClick}
-              disabled={sending}
-              title="Upload File"
-              style={{ padding: '0.6rem', borderRadius: 12, minWidth: 44, height: 44, fontSize: '1.2rem' }}
-            >
-              📎
-            </button>
-
-            <button
-              type="button"
-              className={`chat-icon-btn btn btn-sm ${isListening ? 'btn-danger' : 'btn-secondary'}`}
-              onClick={handleVoiceToggle}
-              disabled={sending}
-              title="Voice Input"
-              style={{
-                padding: '0.6rem',
-                borderRadius: 12,
-                minWidth: 44,
-                height: 44,
-                fontSize: '1.2rem',
-                animation: isListening ? 'pulse-red 1.5s infinite' : 'none',
-              }}
-            >
-              {isListening ? '🛑' : '🎤'}
-            </button>
-          </div>
 
           <div className="chat-compose-editor">
             <textarea
@@ -354,15 +322,48 @@ const ChatRoom = ({ sessionId, myName, myRole }) => {
             />
           </div>
 
-          <button
-            type="submit"
-            className="chat-send-btn btn btn-primary"
-            disabled={!inputText.trim() || sending}
-            id="chat-send-btn"
-            style={{ padding: '0.75rem 1.5rem', borderRadius: 100, fontWeight: 700 }}
-          >
-            Send
-          </button>
+          <div className="chat-compose-footer">
+            <div className="chat-compose-tools">
+              <button
+                type="button"
+                className={`chat-icon-btn btn btn-sm ${sending ? 'btn-disabled' : 'btn-secondary'}`}
+                onClick={handleFileClick}
+                disabled={sending}
+                title="Upload File"
+                style={{ padding: '0.6rem', borderRadius: 12, minWidth: 44, height: 44, fontSize: '1rem' }}
+              >
+                Attach
+              </button>
+
+              <button
+                type="button"
+                className={`chat-icon-btn btn btn-sm ${isListening ? 'btn-danger' : 'btn-secondary'}`}
+                onClick={handleVoiceToggle}
+                disabled={sending}
+                title="Voice Input"
+                style={{
+                  padding: '0.6rem',
+                  borderRadius: 12,
+                  minWidth: 44,
+                  height: 44,
+                  fontSize: '1rem',
+                  animation: isListening ? 'pulse-red 1.5s infinite' : 'none',
+                }}
+              >
+                {isListening ? 'Stop Mic' : 'Mic'}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="chat-send-btn btn btn-primary"
+              disabled={!inputText.trim() || sending}
+              id="chat-send-btn"
+              style={{ padding: '0.75rem 1.5rem', borderRadius: 100, fontWeight: 700 }}
+            >
+              Send
+            </button>
+          </div>
         </form>
       </div>
 
